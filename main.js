@@ -21,3 +21,13 @@ function animate() {
     renderer.render(scene, camera);
 }
 renderer.setAnimationLoop(animate);
+
+
+
+
+const fetchBackgroundImage = async () => {
+    const apiKey = import.meta.env.VITE_UNSPLASH_API_KEY;
+    const location = "1600+Amphitheatre+Parkway,+Mountain+View,+CA";
+    const url = `https://maps.googleapis.com/maps/api/staticmap?center=${location}&zoom=18&size=600x400&maptype=satellite&key=${apiKey}`;
+    return url; // The URL is the static image of the map
+};

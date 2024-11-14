@@ -13,13 +13,23 @@
     <div id="three-container"></div>
 
     <div id="controls-container">
+        <label for="zoom-input">Zoom Level:</label>
+        <input type="number" id="zoom-input" value="18" min="0" max="21">
         <label for="height-input">Building Height:</label>
         <input type="number" id="height-input" placeholder="Enter height (m)" min="0">
 
         <label for="pitch-input">Roof Pitch (degrees):</label>
         <input type="number" id="pitch-input" placeholder="Enter pitch (°)" min="0" max="90">
 
+        <select id="pitch-side-input">
+            <option value="x">X-axis</option>
+            <option value="z">Z-axis</option>
+        </select>
+
+        <input id="wall-height-input" type="number" value="10" />
+
         <button id="apply-button">Apply</button>
+        <button id="eraser-button" class="eraser-button">Toggle Eraser</button>
     </div>
     <!-- <script src="https://cdn.skypack.dev/three@0.130.1/build/three.min.js"></script>
     <script src="https://cdn.skypack.dev/three/examples/js/controls/OrbitControls.js"></script> -->

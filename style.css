@@ -1,7 +1,7 @@
 /* General reset for body */
 body {
     margin: 50px;
-    background-color: black;
+    background-color: ;
     font-family: Arial, sans-serif;
     background-color: #f4f4f4;
 }
@@ -69,4 +69,19 @@ button:hover {
 button:disabled {
     background-color: #d3d3d3;
     cursor: not-allowed;
+}
+
+
+#eraser-button {
+    background-color: #ff5733;
+    /* Red color for the eraser button */
+}
+
+#eraser-button.activated {
+    background-color: #c0392b;
+    /* Darker red for active state */
+}
+
+#eraser-button:focus {
+    outline: none;
 }

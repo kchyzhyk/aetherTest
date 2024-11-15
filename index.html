@@ -6,6 +6,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Three.js Building Outline Tool</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css">
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@<version>/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@<version>/examples/jsm/"
+        }
+      }
+    </script>
   <script type="module" crossorigin src="/aetherTest/assets/index-CawOoFlO.js"></script>
   <link rel="stylesheet" crossorigin href="/aetherTest/assets/index-CSlkfGMT.css">
 </head>
@@ -36,6 +44,7 @@
         <button id="eraser-button" class="eraser-button">Toggle Eraser</button>
         <button id="drawing-button">Toggle Drawing</button>
     </div>
+
 </body>
 
 </html>

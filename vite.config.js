@@ -1,8 +1,6 @@
 export default {
-    base: '/',
+    base: '/aetherTest/',
     build: {
         outDir: 'dist',
-        rollupOptions: {
-        }
     }
 };

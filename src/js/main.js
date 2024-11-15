@@ -61,7 +61,7 @@ const loadGoogleMapsImage = async () => {
         }
         new THREE.TextureLoader().load(url, resolve, undefined, reject);
     });
-};
+}
 
 const applyGoogleMapsBackground = async () => {
     const googleTexture = await loadGoogleMapsImage();

@@ -1,8 +1,7 @@
-import { defineConfig } from 'vite';
 
-export default defineConfig({
+export default {
     base: '/aetherTest/',
     build: {
-        outDir: 'dist', // Default output directory
-    },
-});
+        outDir: 'dist',
+    }
+};

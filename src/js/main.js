@@ -11,40 +11,63 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setClearColor(0xffffff, 0);
 document.getElementById('three-container').appendChild(renderer.domElement);
 
+const gridHelper = new THREE.GridHelper(100, 10);
+scene.add(gridHelper);
+
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 const lineMaterial = new LineMaterial({
-    color: 0x00ff00, // Green color
+    color: 0x00ff00,
     linewidth: 10,
     resolution: new THREE.Vector2(window.innerWidth, window.innerHeight),
 });
 
-let points = [];
-let drawnLines = [];
-let pointMarkers = [];
-let eraserActive = false;
-let modelMesh = null;
-
-const pointMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-const pointGeometry = new THREE.SphereGeometry(0.3, 8, 8);
-const lineGeometry = new LineGeometry();
-let line;
-
 const controls = new OrbitControls(camera, renderer.domElement);
 camera.position.set(0, 60, 40);
 
-// Background setup
-const loadGoogleMapsImage = async (zoom) => {
+// const pointMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+// const pointGeometry = new THREE.SphereGeometry(0.3, 8, 8);
+const lineGeometry = new LineGeometry();
+let line;
+
+let points = [];
+let drawnLines = [];
+// let pointMarkers = [];
+let modelMesh = null;
+let drawingActive = false;
+let eraserActive = false;
+
+// const loadingPlaces = async () => {
+//     const apiKey = import.meta.env.VITE_PLACES_API_KEY
+
+//     const location = document.getElementById('address-input').value;
+
+//     const url = `https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=${encodeURIComponent(placeName)}&inputtype=textquery&fields=photos,formatted_address,name,geometry&key=${apiKey}`;
+
+
+// }
+
+// Scene background setup
+const loadGoogleMapsImage = async () => {
+    console.log('Loading google')
     const apiKey = import.meta.env.VITE_API_KEY;
-    const location = "Zahradnicka+4833/43,+821+08+Bratislava";
+    const location = document.getElementById('address-input').value || 'Zahradnicka 4833/43, 821 08 Bratislava';
+    const zoom = parseInt(document.getElementById('zoom-input').value, 10) || 18
     const url = `https://maps.googleapis.com/maps/api/staticmap?center=${location}&zoom=${zoom}&size=600x400&maptype=satellite&key=${apiKey}`;
     return new Promise((resolve, reject) => {
+        if (!url || !location) {
+            reject(new Error("No image URL found"));
+            return;
+        }
         new THREE.TextureLoader().load(url, resolve, undefined, reject);
     });
 };
 
-const applyGoogleMapsBackground = async (zoomLevel) => {
-    const googleTexture = await loadGoogleMapsImage(zoomLevel);
+const applyGoogleMapsBackground = async () => {
+    const googleTexture = await loadGoogleMapsImage();
+    if (!googleTexture) {
+        return
+    }
     const planeGeometry = new THREE.PlaneGeometry(100, 100);
     const planeMaterial = new THREE.MeshBasicMaterial({ map: googleTexture, side: THREE.FrontSide });
     const plane = new THREE.Mesh(planeGeometry, planeMaterial);
@@ -52,7 +75,6 @@ const applyGoogleMapsBackground = async (zoomLevel) => {
     scene.children.filter(child => child.isMesh && child.material.map).forEach(child => scene.remove(child));
     scene.add(plane);
 };
-
 const debounce = (func, delay) => {
     let timer;
     return (...args) => {
@@ -61,15 +83,12 @@ const debounce = (func, delay) => {
     };
 };
 
-const initialZoom = parseInt(document.getElementById('zoom-input').value, 10) || 18;
-applyGoogleMapsBackground(initialZoom);
-
-const debouncedUpdateBackground = debounce((zoom) => applyGoogleMapsBackground(zoom), 500);
-document.getElementById('zoom-input').addEventListener('input', (event) => {
-    debouncedUpdateBackground(parseInt(event.target.value, 10) || 18);
+applyGoogleMapsBackground();
+const debouncedUpdateBackground = debounce(() => applyGoogleMapsBackground(), 500);
+document.getElementById('address-button').addEventListener('click', () => {
+    applyGoogleMapsBackground();
 });
 
-// Update drawn line based on points
 const updateLine = () => {
     if (line) {
         scene.remove(line);
@@ -84,7 +103,7 @@ const updateLine = () => {
     }
 };
 
-// Mouse-based point or erase actions
+//need to fix this function
 const eraseLine = (event) => {
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
@@ -100,14 +119,38 @@ const eraseLine = (event) => {
                 drawnLines.splice(index, 1);
             }
         });
-    } else {
+    } else if (drawingActive) {
         const intersects = raycaster.intersectObject(scene.children.find(child => child.isMesh && child.material.map));
         if (intersects.length > 0) {
             points.push(intersects[0].point.clone());
             updateLine();
-            addPointMarker(intersects[0].point.clone());
         }
     }
+};
+
+const toggleDrawing = () => {
+
+    drawingActive = !drawingActive;
+
+    if (drawingActive) {
+        console.log('Drawing Started');
+        points = [];
+    } else {
+        console.log('Drawing Stopped');
+    }
+    console.log(drawingActive)
+};
+
+
+const toggleEraser = () => {
+    eraserActive = !eraserActive;
+    if (eraserActive) {
+        console.log('Eraser Started');
+    } else {
+        console.log('Eraser Stopped');
+    }
+
+    console.log(eraserActive)
 };
 
 const onMouseDown = (event) => {
@@ -115,7 +158,7 @@ const onMouseDown = (event) => {
 };
 
 const onMouseMove = (event) => {
-    if (!eraserActive) {
+    if (drawingActive) {
         mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
         mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
         raycaster.setFromCamera(mouse, camera);
@@ -129,25 +172,19 @@ const onMouseMove = (event) => {
 };
 
 const onMouseUp = () => {
-    if (!eraserActive && points.length > 2 && points[0].distanceTo(points[points.length - 1]) < 1) {
+    if (drawingActive && points.length > 2 && points[0].distanceTo(points[points.length - 1]) < 1) {
         points[points.length - 1] = points[0];
         updateLine();
     }
 };
 
 // Marker for each point
-const addPointMarker = (point) => {
-    const pointMesh = new THREE.Mesh(pointGeometry, pointMaterial);
-    pointMesh.position.copy(point);
-    scene.add(pointMesh);
-    pointMarkers.push(pointMesh);
-};
-
-// Toggle eraser mode
-const toggleEraser = () => {
-    eraserActive = !eraserActive;
-    console.log(eraserActive ? 'Eraser Activated' : 'Eraser Deactivated');
-};
+// const addPointMarker = (point) => {
+//     const pointMesh = new THREE.Mesh(pointGeometry, pointMaterial);
+//     pointMesh.position.copy(point);
+//     scene.add(pointMesh);
+//     pointMarkers.push(pointMesh);
+// };
 
 document.getElementById('eraser-button').addEventListener('click', toggleEraser);
 
@@ -156,56 +193,42 @@ const createRoof = (points, height, pitch, pitchSide) => {
         alert('Please draw a closed polygon first.');
         return;
     }
-
-    // Remove any existing roof model before adding a new one
     if (modelMesh) {
         scene.remove(modelMesh);
         modelMesh.geometry.dispose();
         modelMesh.material.dispose();
     }
 
-    // Create a shape from the polygon points (only x, z for the outline)
+
     const shape = new THREE.Shape();
     shape.moveTo(points[0].x, points[0].z); // Start the shape at the first point (x, z)
     for (let i = 1; i < points.length; i++) {
-        shape.lineTo(points[i].x, points[i].z); // Continue creating the polygon
+        shape.lineTo(points[i].x, points[i].z);
     }
     shape.lineTo(points[0].x, points[0].z); // Close the shape by connecting back to the first point
 
-    // Create the geometry for the roof (without extrusion)
+
     const geometry = new THREE.ShapeGeometry(shape);
-
-    // Create the material for the roof
     const material = new THREE.MeshBasicMaterial({ color: 0x00ff00, side: THREE.DoubleSide });
-
-    // Create the mesh for the roof
     modelMesh = new THREE.Mesh(geometry, material);
+    modelMesh.position.set(0, height, 0);
 
-    // Position the roof directly above the polygon at the specified height
-    modelMesh.position.set(0, height, 0);  // Move the roof upwards by the 'height' value
 
-    // Apply pitch based on the specified axis and angle
-    const pitchInRadians = THREE.MathUtils.degToRad(pitch);  // Convert pitch to radians
+    const pitchInRadians = THREE.MathUtils.degToRad(pitch);
     if (pitchSide === 'x') {
-        modelMesh.rotation.x = pitchInRadians;  // Apply pitch on X-axis
+        modelMesh.rotation.x = pitchInRadians;
     } else if (pitchSide === 'z') {
-        modelMesh.rotation.z = pitchInRadians;  // Apply pitch on Z-axis
+        modelMesh.rotation.z = pitchInRadians;
     }
-
-    // Ensure the roof stays flat on the XZ plane (no Y rotation)
     modelMesh.rotation.y = 0;
-
-    // Add the roof mesh to the scene
     scene.add(modelMesh);
 };
 
 const createWallsFromPolygonToRoof = (points, roofHeight) => {
     if (points.length < 3) {
-        alert('Пожалуйста, нарисуйте замкнутый многоугольник.');
         return;
     }
 
-    // Удаляем старые стены, если они есть
     scene.children.forEach(child => {
         if (child.name === 'wall') {
             scene.remove(child);
@@ -214,40 +237,63 @@ const createWallsFromPolygonToRoof = (points, roofHeight) => {
         }
     });
 
-    // Проходим по всем точкам полигона
     for (let i = 0; i < points.length; i++) {
         const startPoint = points[i];
-        const endPoint = points[(i + 1) % points.length]; // Следующая точка с циклом на начало
+        const endPoint = points[(i + 1) % points.length];
 
-        // Находим длину стороны для ширины стены
         const wallWidth = startPoint.distanceTo(endPoint);
+        const wallHeight = roofHeight;
+        const wallDepth = 0.1;
 
-        // Создаём геометрию стены как плоскость (PlaneGeometry), где ширина - длина стороны, а высота - высота крыши
-        const geometry = new THREE.PlaneGeometry(wallWidth, roofHeight);
 
-        // Создаём материал стены
-        const material = new THREE.MeshBasicMaterial({ color: 0xaaaaaa, side: THREE.DoubleSide });
-
-        // Создаём меш стены
+        const geometry = new THREE.BoxGeometry(wallWidth, wallHeight, wallDepth);
+        const material = new THREE.MeshBasicMaterial({ color: 0xaaaaaa });
         const wall = new THREE.Mesh(geometry, material);
         wall.name = 'wall';
 
-        // Находим середину между начальной и конечной точкой
+
         const midpoint = new THREE.Vector3().addVectors(startPoint, endPoint).multiplyScalar(0.5);
-        wall.position.set(midpoint.x, roofHeight / 2, midpoint.z);
+        wall.position.set(midpoint.x, wallHeight / 2, midpoint.z);
 
-        // Рассчитываем угол наклона стены вдоль стороны
-        const dx = endPoint.x - startPoint.x;
-        const dz = endPoint.z - startPoint.z;
-        const angle = Math.atan2(dz, dx);
+        // Calculate the rotation to face the correct direction
+        const direction = new THREE.Vector3().subVectors(endPoint, startPoint).normalize();
+        const angle = Math.atan2(direction.z, direction.x); // Angle to rotate the wall
+        wall.rotation.y = angle; // Rotate the wall to face the edge direction
 
-        // Поворачиваем стену вдоль линии полигона
-        wall.rotation.y = angle;
-
-        // Добавляем стену в сцену
+        // Add the wall to the scene
         scene.add(wall);
     }
 };
+
+// const createWallsFromPolygonToRoof = (points, roofHeight) => {
+//     if (points.length < 3) {
+//         return;
+//     }
+
+//     scene.children.forEach(child => {
+//         if (child.name === 'wall') {
+//             scene.remove(child);
+//             child.geometry.dispose();
+//             child.material.dispose();
+//         }
+//     });
+//     for (let i = 0; i < points.length; i++) {
+//         const startPoint = points[i];
+//         const endPoint = points[(i + 1) % points.length];
+
+//         const wallWidth = startPoint.distanceTo(endPoint);
+//         const geometry = new THREE.PlaneGeometry(wallWidth, roofHeight);
+//         const material = new THREE.MeshBasicMaterial({ color: 0xaaaaaa, side: THREE.DoubleSide });
+//         const wall = new THREE.Mesh(geometry, material);
+//         wall.name = 'wall';
+//         const midpoint = new THREE.Vector3().addVectors(startPoint, endPoint).multiplyScalar(0.5);
+//         wall.position.set(midpoint.x, roofHeight / 2, midpoint.z);
+//         const direction = new THREE.Vector3().subVectors(endPoint, startPoint).normalize();
+//         wall.lookAt(new THREE.Vector3(midpoint.x + direction.x, roofHeight / 2, midpoint.z + direction.z));
+//         scene.add(wall);
+//     }
+// };
+
 
 
 // Example usage:
@@ -262,25 +308,28 @@ document.getElementById('apply-button').addEventListener('click', () => {
     }
 
     createRoof(points, height, pitch, pitchSide);
-    // Create the walls
     createWallsFromPolygonToRoof(points, height);
 });
-
-// Event listeners for mouse actions
+// Event listeners for mouse or keys actions
 window.addEventListener('mousedown', onMouseDown);
 window.addEventListener('mousemove', onMouseMove);
 window.addEventListener('mouseup', onMouseUp);
+document.getElementById('drawing-button').addEventListener('click', toggleDrawing);
 
+document.getElementById('zoom-input').addEventListener('input', (event) => {
+    debouncedUpdateBackground(parseInt(event.target.value, 10) || 18);
+});
 document.onkeydown = function (evt) {
     evt = evt || window.event;
-    var isEscape = false;
+    let isEscape = false;
     if ("key" in evt) {
         isEscape = (evt.key === "Escape" || evt.key === "Esc");
     } else {
         isEscape = (evt.keyCode === 27);
     }
     if (isEscape) {
-        eraserActive = true;
+        drawingActive = false;
+        eraserActive = false;
     }
 };
 
@@ -292,3 +341,14 @@ const animate = () => {
 };
 
 animate();
+
+window.addEventListener('resize', () => {
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+});
+
+// eraser bug
+// walls bugs
+// roof angle bug
+//

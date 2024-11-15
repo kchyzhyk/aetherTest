@@ -1,7 +1,22 @@
+import { defineConfig } from 'vite';
 
-export default {
+export default defineConfig({
     base: '/aetherTest/',
     build: {
-        outDir: 'dist'
-    }
-};
+        rollupOptions: {
+            external: ['three'],
+        },
+    },
+    resolve: {
+        alias: {
+
+            'three': 'node_modules/three/build/three.module.js',
+        },
+    },
+    server: {
+
+        proxy: {
+
+        },
+    },
+});

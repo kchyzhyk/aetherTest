@@ -1,8 +1,12 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.module.js';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { Line2 } from 'three/addons/lines/Line2.js';
-import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
-import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
+// Import OrbitControls
+import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/OrbitControls.js';
+
+// Import Line2 and related classes
+import { Line2 } from 'https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/lines/Line2.js';
+import { LineGeometry } from 'https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/lines/LineGeometry.js';
+import { LineMaterial } from 'https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/lines/LineMaterial.js';
+
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
